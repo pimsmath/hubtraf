@@ -1,5 +1,5 @@
-import structlog
 import asyncio
+import structlog
 import argparse
 import random
 import time
@@ -52,16 +52,6 @@ def read_notebook_code_from_file(config):
     return config
 
 def verify_config(config):
-    if 'hub' in config:
-        if 'group' not in config['hub']:
-            return False
-        if 'instance_type' not in config['hub']:
-            return False
-        if 'image' not in config['hub']:
-            return False
-    else:
-        return False
-    
     if 'notebook' in config:
         if 'assert_output' not in config['notebook']:
             return False
@@ -127,7 +117,6 @@ def main():
 
     structlog.configure(processors=processors)
 
-    print(args.config)
     config=None
     if args.config:
         with open(args.config, 'r') as stream:

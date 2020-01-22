@@ -14,6 +14,7 @@ logger = structlog.get_logger()
 class OperationError(Exception):
     pass
 
+
 class User:
     class States(Enum):
         CLEAR = 1
@@ -96,7 +97,6 @@ class User:
         assert self.state == User.States.LOGGED_IN
 
         start_time = time.monotonic()
-
         self.log.msg(f'Server: Starting', action='server-start', phase='start')
         i = 0
         while True:
@@ -107,26 +107,25 @@ class User:
             except Exception as e:
                 self.log.msg('Server: Failed {}'.format(str(e)), action='server-start', attempt=i + 1, phase='attempt-failed', duration=time.monotonic() - start_time)
                 continue
-
             # Check if paths match, ignoring query string (primarily, redirects=N), fragments
-            target_url = self.notebook_url / 'tree'
-            if resp.url.scheme == target_url.scheme and resp.url.host == target_url.host and resp.url.path == target_url.path:
-                self.log.msg('Server: Started', action='server-start', phase='complete', attempt=i + 1, duration=time.monotonic() - start_time)
+            target_url_tree = self.notebook_url / 'tree'
+            if resp.url.scheme == target_url_tree.scheme and resp.url.host == target_url_tree.host and resp.url.path == target_url_tree.path:
+                self.log.msg('Server: Started (Jupyter Notebook)', action='server-start', phase='complete', attempt=i + 1, duration=time.monotonic() - start_time)
+                break
+            target_url_lab = self.notebook_url / 'lab'
+            if resp.url.scheme == target_url_lab.scheme and resp.url.host == target_url_lab.host and resp.url.path == target_url_lab.path:
+                self.log.msg('Server: Started (JupyterLab)', action='server-start', phase='complete', attempt=i + 1, duration=time.monotonic() - start_time)
                 break
             if time.monotonic() - start_time >= timeout:
                 self.log.msg('Server: Timeout', action='server-start', phase='failed', duration=time.monotonic() - start_time)
                 raise OperationError()
-
             # Always log retries, so we can count 'in-progress' actions
-            self.log.msg('Server: In progress', action='server-start', phase='attempt-complete', duration=time.monotonic() - start_time, attempt=i + 1)
-            
+            self.log.msg('Server: Retrying after response {}'.format(str(resp)), action='server-start', phase='attempt-complete', duration=time.monotonic() - start_time, attempt=i + 1)
             # FIXME: Add jitter?
             await asyncio.sleep(random.uniform(0, spawn_refresh_time))
-            i += 1
         
         self.state = User.States.SERVER_STARTED
 
-    # https://hub.kent.dev.primehub.io/hub/api/users/phuser-0/server
     async def stop_server(self):
         assert self.state == User.States.SERVER_STARTED
         self.log.msg('Server: Stopping', action='server-stop', phase='start')
@@ -261,7 +260,6 @@ class User:
                     duration=duration, iteration=iteration
                 )
         except Exception as e:
-            print(e)
             if type(e) is OperationError:
                 raise
             if is_connected:
