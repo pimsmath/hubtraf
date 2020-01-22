@@ -20,3 +20,4 @@ async def login_dummy(session, hub_url, log, username, password):
     if resp.status != 302:
         log.msg('Login: Failed with response {}'.format(str(resp)), action='login', phase='failed', duration=time.monotonic() - start_time)
         raise OperationError()
+

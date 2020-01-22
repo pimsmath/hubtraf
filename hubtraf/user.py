@@ -23,13 +23,27 @@ class User:
         KERNEL_STARTED = 4
 
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
+        async def on_request_start(session, trace_config_ctx, params):
+            print("Starting %s request for %s. headers: %s" % (params.method, params.url, params.headers))
+        async def on_request_end(session, trace_config_ctx, params):
+            print("Responsing %s request for %s. response: %s" % (params.method, params.url, params.response))
+        async def on_request_chunk_sent(session, trace_config_ctx, params):
+            print("Send chunk %s" % (params.chunk))
+        trace_config = aiohttp.TraceConfig()
+        trace_config.on_request_end.append(on_request_end)
+        trace_config.on_request_start.append(on_request_start)
+        trace_config.on_request_chunk_sent.append(on_request_chunk_sent)
+ 
+        if self.debug:
+            self.session = aiohttp.ClientSession(trace_configs=[trace_config])
+        else:
+            self.session = aiohttp.ClientSession()
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.session.close() 
 
-    def __init__(self, username, hub_url, login_handler):
+    def __init__(self, username, hub_url, login_handler, debug=False, config=None):
         """
         A simulated JupyterHub user.
 
@@ -57,6 +71,8 @@ class User:
             username=username
         )
         self.login_handler = login_handler
+        self.debug = debug
+        self.config = config
 
     async def login(self):
         """
@@ -85,7 +101,7 @@ class User:
         i = 0
         while True:
             i += 1
-            self.log.msg(f'Server: Attempting to Starting', action='server-start', phase='attempt-start', attempt=i + 1)
+            self.log.msg(f'Server: Attempting to start', action='server-start', phase='attempt-start', attempt=i + 1)
             try:
                 resp = await self.session.get(self.hub_url / 'hub/spawn')
             except Exception as e:
