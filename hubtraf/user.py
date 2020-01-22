@@ -18,9 +18,8 @@ class User:
     class States(Enum):
         CLEAR = 1
         LOGGED_IN = 2
-        SERVER_STARTING= 3
-        SERVER_STARTED = 4
-        KERNEL_STARTED = 5
+        SERVER_STARTED = 3
+        KERNEL_STARTED = 4
 
     async def __aenter__(self):
         async def on_request_start(session, trace_config_ctx, params):
@@ -84,6 +83,7 @@ class User:
         """
         # We only log in if we haven't done anything already!
         assert self.state == User.States.CLEAR
+
         start_time = time.monotonic()
         await self.login_handler(log=self.log, hub_url=self.hub_url, session=self.session, username=self.username)
         hub_cookie = self.session.cookie_jar.filter_cookies(self.hub_url).get('hub', None)
@@ -92,59 +92,33 @@ class User:
         self.log.msg('Login: Complete', action='login', phase='complete', duration=time.monotonic() - start_time)
         self.state = User.States.LOGGED_IN
 
-    async def start_server(self):
+    async def ensure_server(self, timeout=300, spawn_refresh_time=30):
         assert self.state == User.States.LOGGED_IN
 
         start_time = time.monotonic()
 
-        self.log.msg(f'Server: Attempting to start', action='server-start', phase='attempt-start')
-        try:
-            form = aiohttp.FormData()
-            if self.config:
-                hub = self.config['hub']
-                form.add_field('group', hub['group'], content_type='form-data')
-                form.add_field('instance_type', hub['instance_type'], content_type='form-data')
-                form.add_field('image', hub['image'], content_type='form-data')
-            else:
-                form.add_field('group', 'phusers', content_type='form-data')
-                form.add_field('instance_type', 'cpu-only', content_type='form-data')
-                form.add_field('image', 'base-notebook', content_type='form-data')
-            resp = await self.session.post(self.hub_url / 'hub/spawn', data=form, allow_redirects=False)
-        except Exception as e:
-            print(e)
-            raise OperationError()
-        
-        if resp.status != 302:
-            self.log.msg('Server: Failed {}'.format(str(resp)), action='server-start', phase='attempt-failed', duration=time.monotonic() - start_time)
-            raise OperationError()
-        
-        self.state = User.States.SERVER_STARTING
-        
-
-    async def ensure_server(self, timeout=300, spawn_refresh_time=30):
-        assert self.state == User.States.SERVER_STARTING
-
-        start_time = time.monotonic()
+        self.log.msg(f'Server: Starting', action='server-start', phase='start')
         i = 0
         while True:
-            self.log.msg(f'Server: Checking progress', action='server-starting', phase='check-start', attempt=i + 1)
+            i += 1
+            self.log.msg(f'Server: Attempting to start', action='server-start', phase='attempt-start', attempt=i + 1)
             try:
                 resp = await self.session.get(self.hub_url / 'hub/spawn')
             except Exception as e:
-                self.log.msg('Server: Failed {}'.format(str(e)), action='server-starting', attempt=i + 1, phase='check-failed', duration=time.monotonic() - start_time)
+                self.log.msg('Server: Failed {}'.format(str(e)), action='server-start', attempt=i + 1, phase='attempt-failed', duration=time.monotonic() - start_time)
                 continue
 
             # Check if paths match, ignoring query string (primarily, redirects=N), fragments
-            target_url = self.notebook_url / 'lab'
+            target_url = self.notebook_url / 'tree'
             if resp.url.scheme == target_url.scheme and resp.url.host == target_url.host and resp.url.path == target_url.path:
-                self.log.msg('Server: Started', action='server-starting', phase='complete', attempt=i + 1, duration=time.monotonic() - start_time)
+                self.log.msg('Server: Started', action='server-start', phase='complete', attempt=i + 1, duration=time.monotonic() - start_time)
                 break
             if time.monotonic() - start_time >= timeout:
-                self.log.msg('Server: Timeout', action='server-starting', phase='failed', duration=time.monotonic() - start_time)
+                self.log.msg('Server: Timeout', action='server-start', phase='failed', duration=time.monotonic() - start_time)
                 raise OperationError()
 
             # Always log retries, so we can count 'in-progress' actions
-            self.log.msg('Server: In progress', action='server-starting', phase='in-progress', duration=time.monotonic() - start_time, attempt=i + 1)
+            self.log.msg('Server: In progress', action='server-start', phase='attempt-complete', duration=time.monotonic() - start_time, attempt=i + 1)
             
             # FIXME: Add jitter?
             await asyncio.sleep(random.uniform(0, spawn_refresh_time))
@@ -165,7 +139,7 @@ class User:
         except Exception as e:
             self.log.msg('Server: Failed {}'.format(str(e)), action='server-stop', phase='failed', duration=time.monotonic() - start_time)
             raise OperationError()
-        if resp.status != 202 and resp.status != 204 and resp.status != 500:
+        if resp.status != 202 and resp.status != 204:
             self.log.msg('Server: Stop failed', action='server-stop', phase='failed', extra=str(resp), duration=time.monotonic() - start_time)
             raise OperationError()
         self.log.msg('Server: Stopped', action='server-stop', phase='complete', duration=time.monotonic() - start_time)
@@ -209,7 +183,7 @@ class User:
             raise OperationError()
 
         if resp.status != 204:
-            self.log.msg('Kernel:Failed Stopped {}'.format(str(resp)), action='kernel-stop', phase='unexpected-status', duration=time.monotonic() - start_time)
+            self.log.msg('Kernel:Failed Stopped {}'.format(str(resp)), action='kernel-stop', phase='failed', duration=time.monotonic() - start_time)
             raise OperationError()
 
         self.log.msg('Kernel: Stopped', action='kernel-stop', phase='complete', duration=time.monotonic() - start_time)

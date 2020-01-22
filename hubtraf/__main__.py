@@ -8,7 +8,6 @@ import sys
 import yaml
 from hubtraf.user import User, OperationError
 from hubtraf.auth.dummy import login_dummy
-from hubtraf.auth.keycloak import login_keycloak
 from functools import partial
 
 def load_code_and_output(config):
@@ -21,11 +20,10 @@ def load_code_and_output(config):
 
 async def simulate_user(hub_url, username, password, delay_seconds, code_execute_seconds, debug=False, config=None):
     await asyncio.sleep(delay_seconds)
-    async with User(username, hub_url, partial(login_keycloak, password=password), debug=debug, config=config) as u:
+    async with User(username, hub_url, partial(login_dummy, password=password), debug=debug, config=config) as u:
         code, output = load_code_and_output(config)
         try:
             await u.login()
-            await u.start_server()
             await u.ensure_server()
             await u.start_kernel()
             await u.assert_code_output(code, output, 5, code_execute_seconds)
