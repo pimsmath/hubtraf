@@ -1,4 +1,4 @@
 ---
 notebook:
-  code_file: "./benchmark/fibonacci.py"
-  assert_output: "21"
+  code_file: "./benchmark/gitpull.py"
+  assert_output: "False"
