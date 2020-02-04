@@ -84,7 +84,7 @@ Python Usage
 
       cd hubtraf
       pip install .
-      hubtraf hub_url user_count
+      hubtraf --config=config.yaml hub_url user_count
 
       
   Additional options included:
@@ -97,7 +97,8 @@ Python Usage
   ``--user-prefix``                  Prefix to use when generating user names, default = hostname
   ``--user-session-min-runtime``     Min seconds user is active for, default 60
   ``--user-session-max-runtime``     Max seconds user is active for, defautl 300
-  ``--user-ession-max-start-delay``  Max seconds by which all users are have logged in, default 60
+  ``--user-session-max-start-delay`` Max seconds by which all users are have logged in, default 60
+  ``--config=<YAML FILE>``           Specify a configuration file of code to run
   ``--json``                         True if output should be JSON formatted
   =================================  =======================================================
 
