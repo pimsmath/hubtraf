@@ -6,5 +6,5 @@ charts:
       published: https://pimsmath.github.io/hubtraf
 
     images:
-      hubtraf:
+      hubtraf
         valuesPath: hubtraf.image
