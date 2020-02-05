@@ -251,7 +251,7 @@ class User:
                                     assert response == output
                                     duration = time.monotonic() - exec_start_time
                                     break
-                    # Sleep a random amount of time between 0 and 1s, so we aren't busylooping
+                    # Sleep a random amount of time between 0 and 1s, so we aren't busy looping
                     await asyncio.sleep(random.uniform(0, 1))
 
                 self.log.msg(
