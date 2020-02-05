@@ -1,0 +1,12 @@
+apiVersion: v1
+entries:
+  loadtest:
+  - apiVersion: v1
+    created: "2020-02-05T12:02:16.57182-08:00"
+    description: A Helm chart for Kubernetes
+    digest: eae19be686ec32f2525b1c17f27960a542f440fb7bb734d7c962a91193c349c2
+    name: loadtest
+    urls:
+    - https://pimsmath.github.io/hubtraf/loadtest-0.0.1-n058.h87634b9.tgz
+    version: 0.0.1-n058.h87634b9
+generated: "2020-02-05T12:02:16.305753-08:00"
