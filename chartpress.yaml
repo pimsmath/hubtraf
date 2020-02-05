@@ -1,0 +1,10 @@
+charts:
+  - name: helm-chart
+    imagePrefix: pimsmath/hubtraf-
+    repo:
+      git: pimsmath/hubtraf
+      published: https://pimsmath.github.io/hubtraf
+
+    images:
+      hubtraf:
+        valuesPath: hubtraf.image

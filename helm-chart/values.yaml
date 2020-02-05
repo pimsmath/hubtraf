@@ -12,9 +12,9 @@ hub:
   url: ""
 
 users:
-  count: 100
+  count: 5
   startTime:
     max: 600
   runTime:
-    min: 1800
-    max: 3600
+    min: 20
+    max: 69
