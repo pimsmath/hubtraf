@@ -1,7 +1,7 @@
 completions: 1
 image:
-  repository: yuvipanda/hubtraf
-  tag: v2
+  repository: pimsmath/hubtraf-hubtraf
+  tag: '0.0.1-n058.h87634b9'
   pullPolicy: Always
 resources: {}
 
