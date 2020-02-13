@@ -1,4 +1,4 @@
 ---
 notebook:
-  code_file: "./benchmark/gitpull.py"
-  assert_output: "False"
+  code_file: "./benchmark/hello.py"
+  assert_output: "Hello"
