@@ -1,4 +1,12 @@
 ---
+users:
+  count: 5
+  startTime:
+    max: 120
+  runTime:
+    min: 60
+    max: 120
+
 notebook:
   code_file: "./benchmark/hello.py"
   assert_output: "Hello"
