@@ -8,5 +8,5 @@ users:
     max: 120
 
 notebook:
-  code_file: "./benchmark/hello.py"
-  assert_output: "Hello"
+  - source: print("hello")
+    assert_output: "Hello"

@@ -11,22 +11,27 @@ from hubtraf.auth.dummy import login_dummy
 from functools import partial
 
 def load_code_and_output(config):
+    code_and_output = []
     if config and 'notebook' in config:
-        code = config['notebook']['code']
-        output = config['notebook']['assert_output']
-        return code, output
+        for tasks in config['notebook']:
+            code_and_output.append({
+                'code' = tasks['source'], 
+                'output' = tasks['assert_output']
+            })
+        return code_and_output
     else:
-        return '5 * 4', '20'
+        return [{'code': '5 * 4', 'assert_output': '20'}]
 
 async def simulate_user(hub_url, username, password, delay_seconds, code_execute_seconds, debug=False, config=None):
     await asyncio.sleep(delay_seconds)
     async with User(username, hub_url, partial(login_dummy, password=password), debug=debug, config=config) as u:
-        code, output = load_code_and_output(config)
+        code_and_output = load_code_and_output(config)
         try:
             await u.login()
             await u.ensure_server()
             await u.start_kernel()
-            await u.assert_code_output(code, output, 5, code_execute_seconds)
+            for code_pair in code_and_output:
+                await u.assert_code_output(code_pair['code'], code_pair['output'], 5, code_execute_seconds)
         except OperationError:
             pass
         finally:
@@ -43,20 +48,13 @@ async def simulate_user(hub_url, username, password, delay_seconds, code_execute
                 # Nothing to do
                 pass
 
-def read_notebook_code_from_file(config):
-    notebook = config.get('notebook', None)
-    if notebook and 'code_file' in notebook:
-        with open(notebook['code_file'], 'r') as file:
-            code = file.read()
-            config['notebook']['code'] = code
-    return config
-
 def verify_config(config):
     if 'notebook' in config:
-        if 'assert_output' not in config['notebook']:
-            return False
-        if 'code' not in config['notebook']:
-            return False
+        for task_pair in config['notebook']:
+            if 'assert_output' not in task_pair
+                return False
+            if 'source' not in task_pair
+                return False
     return True
 
 def main():
@@ -124,8 +122,6 @@ def main():
                 config = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 sys.exit(1)
-            if 'notebook' in config and 'code_file' in config['notebook']:
-                config = read_notebook_code_from_file(config)
             if not verify_config(config):
                 sys.exit(1)
 
