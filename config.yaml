@@ -8,5 +8,7 @@ users:
     max: 120
 
 notebook:
-  - source: print("hello")
-    assert_output: "Hello"
+  - source: print("Hello")
+    assert_output: "Hello\n"
+  - source: print("Goodbye")
+    assert_output: "Goodbye\n"

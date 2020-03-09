@@ -20,7 +20,7 @@ def load_code_and_output(config):
             })
         return code_and_output
     else:
-        return [{'code': '5 * 4', 'assert_output': '20'}]
+        return [{'code': '5 * 4', 'output': '20'}]
 
 async def simulate_user(hub_url, username, password, delay_seconds, code_execute_seconds, debug=False, config=None):
     await asyncio.sleep(delay_seconds)
@@ -51,9 +51,9 @@ async def simulate_user(hub_url, username, password, delay_seconds, code_execute
 def verify_config(config):
     if 'notebook' in config:
         for task_pair in config['notebook']:
-            if 'assert_output' not in task_pair
+            if 'assert_output' not in task_pair:
                 return False
-            if 'source' not in task_pair
+            if 'source' not in task_pair:
                 return False
     return True
 

@@ -248,7 +248,15 @@ class User:
                                 elif msg['msg_type'] == 'stream':
                                     response = msg['content']['text']
                                 if response:
-                                    assert response == output
+                                    try:
+                                        assert response == output
+                                    except AssertionError as ae:
+                                        self.log.msg(f'WS: Code pair assertion {response} != {output}',
+                                            action='code-execute', phase='failure',
+                                            iteration=iteration,
+                                            duration = time.monotonic() - exec_start_time
+                                        )
+                                        continue
                                     duration = time.monotonic() - exec_start_time
                                     break
                     # Sleep a random amount of time between 0 and 1s, so we aren't busy looping
