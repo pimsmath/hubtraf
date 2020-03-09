@@ -15,8 +15,8 @@ def load_code_and_output(config):
     if config and 'notebook' in config:
         for tasks in config['notebook']:
             code_and_output.append({
-                'code' = tasks['source'], 
-                'output' = tasks['assert_output']
+                'code'   : tasks['source'], 
+                'output' : tasks['assert_output']
             })
         return code_and_output
     else:
