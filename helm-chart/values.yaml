@@ -1,7 +1,7 @@
 completions: 1
 image:
   repository: pimsmath/hubtraf-hubtraf
-  tag: '0.0.1-n069.hd39a6ae'
+  tag: '0.0.1-n070.h1afa0ec'
   pullPolicy: Always
 resources: {}
 
