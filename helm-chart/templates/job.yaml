@@ -28,6 +28,9 @@ spec:
       volumes:
       - name: log
         emptyDir: {}
+      - name: benchmark
+        configMap:
+          name: benchmark
       initContainers:
       # Make sure we wait until the collector is ready before starting our stress tests
       # This way we don't lose any events!
@@ -76,6 +79,7 @@ spec:
             --user-session-max-runtime {{ .Values.users.runTime.max | quote }} \
             --user-session-max-start-delay {{ .Values.users.startTime.max | quote }} \
             {{ if .Values.hub.ip }}http://hub{{ else }}{{ required "hub.url is required" .Values.hub.url | quote }}{{ end }} \
+            --config /hubtraf/benchmark/benchmark.yaml \
             {{ .Values.users.count | quote }} \
             2>&1 | tee /var/log/hubtraf/hubtraf.log
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
@@ -84,6 +88,8 @@ spec:
         volumeMounts:
         - name: log
           mountPath: /var/log/hubtraf
+        - name: benchmark
+          mountPath: /hubtraf/benchmark
 ---
 {{ if .Values.rbac.enabled }}
 kind: Role
