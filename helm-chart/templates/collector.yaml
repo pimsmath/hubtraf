@@ -50,9 +50,14 @@ spec:
           - -p
           - Host=search-syzygy-spapk2l7ior7uu6ihjifvugele.ca-central-1.es.amazonaws.com
           - -p
+          - Port=443
+          - -p
           - Logstash_Format=On
           - -p
           - match=*
+          - -p
+          - TLS=On
+          - Retry_Limit=False
 ---
 kind: Service
 apiVersion: v1
