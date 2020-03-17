@@ -23,28 +23,33 @@ spec:
         release: {{ .Release.Name }}
         component: collector
     spec:
+      volumes:
+        - name: fluent-parsers-conf
+          configMap:
+            name: fluent-parsers-conf
       containers:
       - name: fluent-bit
-        image: fluent/fluent-bit:0.12
+        image: fluent/fluent-bit:1.3.9-debug
         ports:
         - containerPort: 24224
         workingDir: /srv
+        volumeMounts:
+          - name: fluent-parsers-conf
+            mountPath: /mnt
         command:
           - /fluent-bit/bin/fluent-bit
           - -R
           - /fluent-bit/etc/parsers.conf
           - -i
           - forward
-          - -o
-          - file
+          - -F
+          - parser
           - -p
-          - path=/srv/events.log
+          - Match=*
           - -p
-          - match=*
-          - -o
-          - stdout
+          - Key_Name=log
           - -p
-          - match=*
+          - Parser=docker
           - -o
           - es
           - -p
@@ -54,10 +59,18 @@ spec:
           - -p
           - Logstash_Format=On
           - -p
-          - match=*
+          - Match=*
           - -p
           - TLS=On
           - Retry_Limit=False
+          - -o
+          - stdout
+          - -p
+          - Match=*
+          - -o
+          - file
+          - -p
+          - Match=*
 ---
 kind: Service
 apiVersion: v1
@@ -91,3 +104,15 @@ spec:
       app: hubtraf
       release: {{ .Release.Name }}
       component: collector
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-parsers-conf
+data:
+  parsers-new.conf: |
+    [PARSER]
+      Name   docker
+      Format json
+      Time_Key time
+      Time_Format %d/%b/%Y:%H:%M:%S.%L

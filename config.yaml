@@ -1,8 +1,8 @@
 ---
 users:
-  count: 5
+  count: 1
   startTime:
-    max: 120
+    max: 10
   runTime:
-    min: 60
-    max: 120
+    min: 10
+    max: 30
