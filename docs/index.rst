@@ -36,15 +36,16 @@ via `Zero to JupyterHub <https://zero-to-jupyterhub.readthedocs.io/>`_.
 
    .. code-block:: bash
 
-      git clone  https://github.com/yuvipanda/hubtraf.git
+      git clone  https://github.com/pimsmath/hubtraf.git
 
 
 2. Configure the Helm Chart
 
    .. code-block:: bash
 
-      helm install --namespace=hubtraf --name=hubtraf hubtraf/helm-chart \
-         --set hub.url=<url to your hub instance>
+      helm upgrade --install --namespace=hubtraf hubtraf  \
+        -f config.yaml helm-chart --set hub.url=<url to your hub instance> \
+        --set-file "benchmark=./benchmark.yaml"
 
    Additional configuration options include:
 
@@ -61,11 +62,25 @@ via `Zero to JupyterHub <https://zero-to-jupyterhub.readthedocs.io/>`_.
    image.repository      Repository for hubtraf image
    image.tag             Hubtraf image tag, default ``v2``
    image.pullPolicy      Image pull policy, default ``Always``
+   es.endpoint           ElasticSearch endpoint
    ===================   =======================================================
 
 The Helm chart installs `fluent-bit <https://fluentbit.io/>`_ to capture logs
-from ``hubtraf`` jobs.  
+from ``hubtraf`` jobs.
 
+The chart defines two main components, a collector and a job. The collector
+runs fluent-bit to store and forward logging output. The job runs a stress
+testing pod consisting of a container running hubtraf and another running
+fluent-bit to ship logs to the collector. If you want to add another round of
+hubtraf/stress after the first job has done it's work, you can do
+
+   .. code-block:: bash
+      kubectl -n hubtraf delete job/hubtraf-hubtraf
+      helm upgrade --install --namespace=hubtraf hubtraf  \
+        -f config.yaml helm-chart --set hub.url=<url to your hub instance> \
+        --set-file "benchmark=./benchmark.yaml"
+
+Adjusting benchmark.yaml as needed.
 
 Python Usage
 ------------
@@ -100,5 +115,6 @@ Python Usage
   ``--user-session-max-start-delay`` Max seconds by which all users are have logged in, default 60
   ``--config=<YAML FILE>``           Specify a configuration file of code to run
   ``--json``                         True if output should be JSON formatted
+  ``--benchmark=<YAML FILE>``        YAML formatted list of input and output to send to kernel
   =================================  =======================================================
 
