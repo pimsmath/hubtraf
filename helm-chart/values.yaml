@@ -1,7 +1,7 @@
 completions: 1
 image:
   repository: pimsmath/hubtraf-hubtraf
-  tag: 'v0.0.3'
+  tag: 'v0.0.4'
   pullPolicy: Always
 resources: {}
 
@@ -18,5 +18,8 @@ users:
   runTime:
     min: 20
     max: 69
+
+#es:
+#  endpoint: search-syzygy-spapk2l7ior7uu6ihjifvugele.ca-central-1.es.amazonaws.com
 
 notebook:

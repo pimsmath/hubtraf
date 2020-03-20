@@ -43,10 +43,11 @@ spec:
           - Key_Name=log
           - -p
           - Parser=docker
+          {{- if .Values.es.endpoint }}
           - -o
           - es
           - -p
-          - Host=search-syzygy-spapk2l7ior7uu6ihjifvugele.ca-central-1.es.amazonaws.com
+          - Host={{- .Values.es.endpoint }}
           - -p
           - Port=443
           - -p
@@ -55,7 +56,9 @@ spec:
           - Match=*
           - -p
           - TLS=On
+          - -p
           - Retry_Limit=False
+          {{- end }}
           - -o
           - stdout
           - -p

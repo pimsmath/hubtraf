@@ -6,3 +6,5 @@ users:
   runTime:
     min: 10
     max: 30
+es:
+  endpoint: search-syzygy-spapk2l7ior7uu6ihjifvugele.ca-central-1.es.amazonaws.com

@@ -1,4 +1,4 @@
 apiVersion: v1
 description: A Helm chart for Kubernetes
 name: loadtest
-version: v0.0.3-n001.h8a00961
+version: v0.0.4
