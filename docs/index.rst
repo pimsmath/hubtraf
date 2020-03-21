@@ -75,6 +75,7 @@ fluent-bit to ship logs to the collector. If you want to add another round of
 hubtraf/stress after the first job has done it's work, you can do
 
    .. code-block:: bash
+
       kubectl -n hubtraf delete job/hubtraf-hubtraf
       helm upgrade --install --namespace=hubtraf hubtraf  \
         -f config.yaml helm-chart --set hub.url=<url to your hub instance> \
