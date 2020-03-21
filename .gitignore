@@ -103,3 +103,5 @@ ENV/
 
 bin/
 pyvenv.cfg
+
+config.yaml
