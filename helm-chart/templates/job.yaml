@@ -46,29 +46,31 @@ spec:
         image: yuvipanda/kubectl:v1.9.0
         name: wait-for-collector
       terminationGracePeriodSeconds: 0
+      shareProcessNamespace: true
       containers:
       - name: fluent-bit
-        image: fluent/fluent-bit:0.12
+        image: fluent/fluent-bit:1.3.9
         volumeMounts:
         - name: log
           mountPath: /var/log/hubtraf
         command:
-          - /bin/sh
-          - -c
-          - |
-            # fluent-bit crashes hard if files don't exist when it starts
-            # Since container start order is non-deterministic, we can't guarantee that
-            # So let's sleep until we know the file exists!
-            # TODO: File bug with fluent-bit
-            set -ex
-            while [ ! -f /var/log/hubtraf/hubtraf.log ]; do
-            sleep 1s;
-            done
-            /fluent-bit/bin/fluent-bit \
-            -R /fluent-bit/etc/parsers.conf \
-            -i tail -p path=/var/log/hubtraf/*.log \
-            -o forward -p host=collector -p match=* \
-            -o stdout -p match=*
+          - /fluent-bit/bin/fluent-bit
+          - -R
+          - /fluent-bit/etc/parsers.conf
+          - -i
+          - tail
+          - -p
+          - path=/var/log/hubtraf/*.log
+          - -o
+          - forward
+          - -p
+          - host=collector
+          - -p
+          - match=*
+          - -o
+          - stdout
+          - -p
+          - match=*
       - command:
           - /bin/bash
           - -c
@@ -82,6 +84,7 @@ spec:
             --config /hubtraf/benchmark/benchmark.yaml \
             {{ .Values.users.count | quote }} \
             2>&1 | tee /var/log/hubtraf/hubtraf.log
+            fluent_pid=$(pgrep fluent-bit) && kill -INT ${fluent_pid}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         name: stress
@@ -90,6 +93,10 @@ spec:
           mountPath: /var/log/hubtraf
         - name: benchmark
           mountPath: /hubtraf/benchmark
+        securityContext:
+          capabilities:
+            add:
+              - SYS_PTRACE
 ---
 {{ if .Values.rbac.enabled }}
 kind: Role
