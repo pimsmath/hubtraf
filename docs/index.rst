@@ -74,7 +74,7 @@ runs fluent-bit to store and forward logging output. The job runs a stress
 testing pod consisting of a container running hubtraf and another running
 fluent-bit to ship logs to the collector. When hubtraf finishes, this second
 instance of fluent-bit will also be killed, leaving only the collector. Logs
-persist on the collector or on the elasticsearch endpoint (if specified). If
+persist and the collector or on the elasticsearch endpoint (if specified). If
 you want to add another round of hubtraf/stress after the first job has done
 it's work, you can do e.g.
 
