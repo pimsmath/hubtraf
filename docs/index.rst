@@ -80,7 +80,8 @@ hubtraf/stress after the first job has done it's work, you can do
         -f config.yaml helm-chart --set hub.url=<url to your hub instance> \
         --set-file "benchmark=./benchmark.yaml"
 
-Adjusting benchmark.yaml as needed.
+
+Adjusting `benchmark.yaml` as needed.
 
 Python Usage
 ------------
