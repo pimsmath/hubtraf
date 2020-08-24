@@ -27,6 +27,7 @@ async def simulate_user(hub_url, username, password, notebook, delay_seconds, no
         finally:
             if u.state == User.States.KERNEL_STARTED:
                 await u.stop_kernel()
+            if u.state == User.States.SERVER_STARTED:
                 await u.stop_server()
 
 

@@ -340,6 +340,7 @@ class User:
                             code_cell['source'], 
                             list(code_cell['outputs']),
                             ws)
+                return True
 
         except Exception as e:
             self.failure('notebook-execute', exception=str(e))
