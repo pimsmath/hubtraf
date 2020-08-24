@@ -6,7 +6,6 @@ import random
 from yarl import URL
 import asyncio
 import async_timeout
-import nbformat
 import structlog
 import time
 import colorama
@@ -322,11 +321,9 @@ class User:
         return True
 
 
-    async def assert_notebook_output(self, notebook, execute_timeout, repeat_time_seconds=None):
-
-        nb = nbformat.read(notebook, as_version=4) 
-        code_cells = [cell for cell in nb.cells if cell['cell_type'] == 'code']
-
+    async def assert_notebook_output(self, notebook, notebook_execute_timeout):
+        
+        code_cells = [cell for cell in notebook.cells if cell['cell_type'] == 'code']
         channel_url = self.notebook_url / 'api/kernels' / self.kernel_id / 'channels'
         self.debug('kernel-connect', phase='start')
         is_connected = False
@@ -341,7 +338,7 @@ class User:
                 for code_cell in code_cells:
                     await self.assert_code_output(
                             code_cell['source'], 
-                            code_cell['outputs'],  
+                            list(code_cell['outputs']),
                             ws)
 
         except Exception as e:

@@ -1,6 +1,7 @@
 import asyncio
 import structlog
 import argparse
+import nbformat
 import random
 import time
 import socket
@@ -10,7 +11,7 @@ from functools import partial
 from collections import Counter
 
 
-async def simulate_user(hub_url, username, password, notebook, delay_seconds, code_execute_seconds):
+async def simulate_user(hub_url, username, password, notebook, delay_seconds, notebook_execute_seconds):
     await asyncio.sleep(delay_seconds)
     async with User(username, hub_url, partial(login_dummy, password=password)) as u:
         try:
@@ -20,7 +21,7 @@ async def simulate_user(hub_url, username, password, notebook, delay_seconds, co
                 return 'start-server'
             if not await u.start_kernel():
                 return 'start-kernel'
-            if not await u.assert_notebook_output(notebook, 5, code_execute_seconds):
+            if not await u.assert_notebook_output(notebook, notebook_execute_seconds):
                 return 'run-code'
             return 'completed'
         finally:
@@ -32,12 +33,13 @@ async def simulate_user(hub_url, username, password, notebook, delay_seconds, co
 async def run(args):
     # FIXME: Pass in individual arguments, not argparse object
     awaits = []
+    notebook = nbformat.read(args.notebook, as_version=4)
     for i in range(args.user_count):
         awaits.append(simulate_user(
             args.hub_url,
             f'{args.user_prefix}-' + str(i),
             'hello',
-            args.notebook,
+            notebook,
             int(random.uniform(0, args.user_session_max_start_delay)),
             int(random.uniform(args.user_session_min_runtime, args.user_session_max_runtime))
         ))
