@@ -6,6 +6,7 @@ import random
 from yarl import URL
 import asyncio
 import async_timeout
+import nbformat
 import structlog
 import time
 import colorama
@@ -59,6 +60,14 @@ class User:
             'Referer': str(self.hub_url / 'hub/')
         }
 
+    def update_username(self, username):
+        self.log = logger.bind(
+            username = username
+        )
+        self.username = username
+        self.notebook_url = self.hub_url / 'user' / username
+        #self.notebook_url = self.hub_url / 'user' / username
+
     def success(self, kind, **kwargs):
         kwargs_pretty = " ".join([f"{k}:{v}" for k, v in kwargs.items()])
         print(f'{colorama.Fore.GREEN}Success:{colorama.Style.RESET_ALL}', kind, self.username,  kwargs_pretty)
@@ -83,9 +92,10 @@ class User:
         assert self.state == User.States.CLEAR
 
         start_time = time.monotonic()
-        logged_in = await self.login_handler(log=self.log, hub_url=self.hub_url, session=self.session, username=self.username)
-        if not logged_in:
+        username = await self.login_handler(log=self.log, hub_url=self.hub_url, session=self.session, username=self.username)
+        if not username:
             return False
+        self.update_username(username)
         hub_cookie = self.session.cookie_jar.filter_cookies(self.hub_url).get('hub', None)
         if hub_cookie:
             self.log = self.log.bind(hub=hub_cookie.value)
@@ -256,61 +266,86 @@ class User:
             "channel": "shell"
         }
 
-    async def assert_code_output(self, code, output, execute_timeout, repeat_time_seconds=None):
+    async def assert_code_output(self, code, outputs, ws):
+
+        self.debug('code-execute', phase='start')
+
+        exec_start_time = time.monotonic()
+        msg_id = str(uuid.uuid4())
+        input_acknowledged = False
+
+        await ws.send_json(self.request_execute_code(msg_id, code))
+        self.debug('code-execute source: ' + code)
+
+        async for msg_text in ws:
+            if msg_text.type != aiohttp.WSMsgType.TEXT:
+                self.failure(
+                    'code-execute',
+                    iteration=iteration,
+                    message=str(msg_text),
+                    duration=time.monotonic() - exec_start_time
+                )
+                return False
+
+            msg = msg_text.json()
+
+            if 'parent_header' in msg and msg['parent_header'].get('msg_id') == msg_id:
+                if msg['channel'] == 'iopub':
+                    response = None
+                    if msg['msg_type'] in ('pyin', 'execute_input'):
+                        input_acknowledged = True
+                    elif msg['msg_type'] == 'status':
+                        if msg['content']['execution_state'] == 'idle' and (len(outputs) == 0) and input_acknowledged:
+                            # No output recorded for some cells so break
+                            self.debug('code-execute idle')
+                            duration = time.monotonic() - exec_start_time
+                            break
+                    elif msg['msg_type'] == 'execute_result':
+                        reference = outputs.pop(0)['data']['text/plain']
+                        response = msg['content']['data']['text/plain']
+                        duration = time.monotonic() - exec_start_time
+                    elif msg['msg_type'] == 'stream':
+                        reference = outputs.pop(0)['text']
+                        response = msg['content']['text']
+                    else:
+                        self.debug('code-execute unknown msg: ' + msg['msg_type'])
+                        duration = time.monotonic() - exec_start_time
+                        break
+                            
+                    if response:
+                        assert response == reference
+                        self.debug('code-execute validated')
+                        duration = time.monotonic() - exec_start_time
+                        break
+
+        self.success('code-execute', duration=duration)
+        return True
+
+
+    async def assert_notebook_output(self, notebook, execute_timeout, repeat_time_seconds=None):
+
+        nb = nbformat.read(notebook, as_version=4) 
+        code_cells = [cell for cell in nb.cells if cell['cell_type'] == 'code']
+
         channel_url = self.notebook_url / 'api/kernels' / self.kernel_id / 'channels'
         self.debug('kernel-connect', phase='start')
         is_connected = False
+
         try:
             async with self.session.ws_connect(channel_url) as ws:
                 is_connected = True
                 self.debug('kernel-connect', phase='complete')
                 start_time = time.monotonic()
                 iteration = 0
-                self.debug('code-execute', phase='start')
-                while True:
-                    exec_start_time = time.monotonic()
-                    iteration += 1
-                    msg_id = str(uuid.uuid4())
-                    await ws.send_json(self.request_execute_code(msg_id, code))
-                    async for msg_text in ws:
-                        if msg_text.type != aiohttp.WSMsgType.TEXT:
-                            self.failure(
-                                'code-execute',
-                                iteration=iteration,
-                                message=str(msg_text),
-                                duration=time.monotonic() - exec_start_time
-                            )
-                            return False
 
-                        msg = msg_text.json()
+                for code_cell in code_cells:
+                    await self.assert_code_output(
+                            code_cell['source'], 
+                            code_cell['outputs'],  
+                            ws)
 
-                        if 'parent_header' in msg and msg['parent_header'].get('msg_id') == msg_id:
-                            # These are responses to our request
-                            if msg['channel'] == 'iopub':
-                                response = None
-                                if msg['msg_type'] == 'execute_result':
-                                    response = msg['content']['data']['text/plain']
-                                elif msg['msg_type'] == 'stream':
-                                    response = msg['content']['text']
-                                if response:
-                                    assert response == output
-                                    duration = time.monotonic() - exec_start_time
-                                    break
-                    if repeat_time_seconds:
-                        if time.monotonic() - start_time >= repeat_time_seconds:
-                            break
-                        else:
-                            # Sleep a random amount of time between 0 and 1s, so we aren't busylooping
-                            await asyncio.sleep(random.uniform(0, 1))
-                            continue
-                    else:
-                        break
-
-                self.success(
-                    'code-execute',
-                    duration=duration, iteration=iteration
-                )
-                return True
         except Exception as e:
-            self.failure('code-execute', exception=str(e))
+            self.failure('notebook-execute', exception=str(e))
             return False
+
+

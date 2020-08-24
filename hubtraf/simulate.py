@@ -10,7 +10,7 @@ from functools import partial
 from collections import Counter
 
 
-async def simulate_user(hub_url, username, password, delay_seconds, code_execute_seconds):
+async def simulate_user(hub_url, username, password, notebook, delay_seconds, code_execute_seconds):
     await asyncio.sleep(delay_seconds)
     async with User(username, hub_url, partial(login_dummy, password=password)) as u:
         try:
@@ -20,7 +20,7 @@ async def simulate_user(hub_url, username, password, delay_seconds, code_execute
                 return 'start-server'
             if not await u.start_kernel():
                 return 'start-kernel'
-            if not await u.assert_code_output("5 * 4", "20", 5, code_execute_seconds):
+            if not await u.assert_notebook_output(notebook, 5, code_execute_seconds):
                 return 'run-code'
             return 'completed'
         finally:
@@ -37,6 +37,7 @@ async def run(args):
             args.hub_url,
             f'{args.user_prefix}-' + str(i),
             'hello',
+            args.notebook,
             int(random.uniform(0, args.user_session_max_start_delay)),
             int(random.uniform(args.user_session_min_runtime, args.user_session_max_runtime))
         ))
@@ -82,6 +83,11 @@ def main():
         '--json',
         action='store_true',
         help='True if output should be JSON formatted'
+    )
+    argparser.add_argument(
+        '--notebook',
+        type=argparse.FileType('r'),
+        required=True
     )
     args = argparser.parse_args()
 

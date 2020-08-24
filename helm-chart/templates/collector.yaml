@@ -45,6 +45,14 @@ spec:
           - stdout
           - -p
           - match=*
+          - -o
+          - es
+          - -p
+          - Host=search-syzygy-spapk2l7ior7uu6ihjifvugele.ca-central-1.es.amazonaws.com
+          - -p
+          - Logstash_Format=On
+          - -p
+          - match=*
 ---
 kind: Service
 apiVersion: v1
