@@ -159,7 +159,12 @@ class User:
             except Exception as e:
                 self.debug('server-start', exception=str(e), attempt=i + 1, phase='attempt-failed', duration=time.monotonic() - start_time)
                 continue
-            if resp.url.parts[1] != 'user':
+            
+            # Total hack! If the hub hit concurrent spawning limit we don't
+            # yet have the correct username. Grab it here.
+            if 'user' in resp.url.parts:
+                self.update_username(resp.url.parts[-2])
+            else:
                 try:
                     resp = await self.session.get(self.hub_url / 'hub/spawn')
                 except Exception as e:
