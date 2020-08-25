@@ -19,6 +19,15 @@ async def login_dummy(session, hub_url, log, username, password):
     if resp.status != 302:
         log.msg('Login: Failed with response {}'.format(str(resp)), action='login', phase='failed', duration=time.monotonic() - start_time)
         return None
-    # Extract (possibly normalized) username from hub, only works if container hasn't started already.
-    resp = await session.get(url)
+
+    try:
+        resp = await session.get(url)
+    except Exception as e:
+        log.msg('Login: Get failed {}'.format(repr(e)), action='username-check', phase='failed', duration=time.monotonic() - start_time)
+        return None
+    
+    # Extract (possibly normalized) username from hub
+    if resp.url.parts[-1] == 'tree':
+        return resp.url.parts[-2]
+    
     return resp.url.parts[-1]

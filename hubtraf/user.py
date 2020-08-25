@@ -152,11 +152,19 @@ class User:
         while True:
             i += 1
             self.debug('server-start', phase='attempt-start', attempt=i + 1)
+           
+            # /hub redirects to /user/:user if running, else /hub/spawn
             try:
-                resp = await self.session.get(self.hub_url / 'hub/spawn')
+                resp = await self.session.get(self.hub_url / 'hub')
             except Exception as e:
                 self.debug('server-start', exception=str(e), attempt=i + 1, phase='attempt-failed', duration=time.monotonic() - start_time)
                 continue
+            if resp.url.parts[1] != 'user':
+                try:
+                    resp = await self.session.get(self.hub_url / 'hub/spawn')
+                except Exception as e:
+                    self.debug('server-start', exception=str(e), attempt=i + 1, phase='attempt-failed', duration=time.monotonic() - start_time)
+                    continue
             # Check if paths match, ignoring query string (primarily, redirects=N), fragments
             target_url_tree = self.notebook_url / 'tree'
             if resp.url.scheme == target_url_tree.scheme and resp.url.host == target_url_tree.host and resp.url.path == target_url_tree.path:
